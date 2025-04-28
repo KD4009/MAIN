@@ -5,7 +5,9 @@ import ast
 from time import time
 import requests
 import os
-from models.users import User  # test 2
+
+from WEB.models.students import Students
+from models.users import User
 from models.news import News
 from models.friends import Friends
 from models.messages import Messages
@@ -19,10 +21,11 @@ from forms.sms_form import SmsForm
 from forms.edit_news_form import EditNewsForm
 from forms.user_edit import UserEditForm
 from translate import eng_to_rus, rus_to_eng, make_translate
-from time_news import get_str_time  # deleted
+from time_news import get_str_time
 import datetime
 from check_correct_data_input import check_correct_email, check_correct_password, check_correct_domen_user
 import git
+
 from api import get_setup
 import pytz
 from itsdangerous import URLSafeTimedSerializer
@@ -110,94 +113,6 @@ def all_users():
     return render_template('all_users.html', users=users, action='', image=all_image)
 
 
-@login_required
-@app.route('/messages', methods=['GET', 'POST'])
-def get_message():
-    if not current_user.is_authenticated:
-        return abort(404)
-
-    db_sess = db_session.create_session()
-    data = request.args
-
-    try:
-        author = current_user.id
-        before = data['before']
-        friends = db_sess.query(Friends).filter(Friends.first_id == author, Friends.second_id == before).first()
-        assert friends
-
-    except Exception:
-        return abort(404)
-
-    who_image = db_sess.query(Images).filter(Images.user_id == before).first().b64_image
-    encoded_string = str(who_image)
-    encoded_string = encoded_string.replace("b'", '').replace("'", '')
-    name_chat = db_sess.query(User).filter(User.id == before).first().name
-
-    messages = db_sess.query(Messages).filter(((Messages.author == author) & (Messages.before == before)) | (
-            (Messages.author == before) & (Messages.before == author))).all()
-
-    if messages is None:
-        if friends.mans_attitude == 'friends':
-            messages = Messages(author=author, before=before, js_message='{}')
-            db_sess.add(messages)
-            db_sess.commit()
-        else:
-            abort(404)
-
-    form = SmsForm()
-    if request.method == 'POST':
-        if request.form['new_message'] == '':
-            return redirect(f'/messages?before={before}')
-        if 'btn_translate_eng' in request.form:
-            result = make_translate(request.form['new_message'], rus_to_eng)
-            result_message = []
-            for message in messages:
-                result_message.append(ast.literal_eval(message.js_message))
-            info = {
-                'messages': result_message,
-                'trans_gey_gey_gey': result,
-                'image': encoded_string,
-                'name_chat': name_chat
-            }
-            return render_template('sms.html', **info, form=form)
-        elif 'btn_translate_russ' in request.form:
-            result = make_translate(request.form['new_message'], eng_to_rus)
-            result_message = []
-            for message in messages:
-                result_message.append(ast.literal_eval(message.js_message))
-            info = {
-                'messages': result_message,
-                'trans_gey_gey_gey': result,
-                'image': encoded_string,
-                'name_chat': name_chat
-            }
-            return render_template('sms.html', **info, form=form)
-
-        else:
-            name = current_user.name
-            text = request.form['new_message']
-            if not text:
-                redirect(f'/messages?before={before}')
-            response = requests.post(url="http://127.0.0.1:5000/send", json={"name": name, "text": text})
-
-            new_message = Messages(author=author, before=before,
-                                   js_message=str({"name": name, "text": text, "id_user": current_user.id}))
-
-            db_sess.add(new_message)
-            db_sess.commit()
-            return redirect(f'/messages?before={before}')
-
-    elif request.method == 'GET':
-        result_message = []
-        for message in messages:
-            result_message.append(ast.literal_eval(message.js_message))
-        info = {
-            'messages': result_message,
-            'image': encoded_string,
-            'name_chat': name_chat
-        }
-        return render_template('sms.html', **info, form=form)
-
 
 @app.route('/secret_update', methods=["POST"])
 def webhook():
@@ -216,45 +131,33 @@ def load_user(user_id):
     return db_sess.get(User, user_id)
 
 
-@app.route('/competition_participants/<int:competition_id>')
+@app.route('/c')
 @login_required
-def competition_participants():
-    if not current_user.is_authenticated:
-        abort(404)
-    form = NewsForm()
-    if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        user_id = db_sess.query(User).filter(User.email == current_user.email).first().id
-        if len(form.name.data.strip()) > 100:
-            return render_template('new_news.html',
-                                   title='Редактирование работы',
-                                   form=form,
-                                   message='Слишком длинное название (максимум 100 символов)')
-        if len(form.text.data.strip()) > 1000:
-            return render_template('new_news.html',
-                                   title='Редактирование работы',
-                                   form=form,
-                                   message='Слишком длинное описание (максимум 1000 символов)')
-        news = News(
-            author=user_id,
-            name=form.name.data,
-            text=form.text.data,
-            level=form.level.data,
-            format=form.format.data,
-            organizer=form.organizer.data,
-            url=form.url.data,
-            place=form.place.data,
-            private=form.private.data,
-        )
-        db_sess.add(news)
-        db_sess.commit()
-        tz_kiev = pytz.timezone('Europe/Kiev')
-        time_kiev = datetime.datetime.now(tz_kiev)
-        news.data = time_kiev
-        news.data_str = get_str_time(news.data)
-        db_sess.commit()
-        return redirect("/")
-    return render_template('competition_participants.html', form=form, title='Новая новость')
+def c():
+    db_sess = db_session.create_session()
+    students = db_sess.query(Students).filter(Students.author == current_user.id).all()
+    return render_template('c.html', students=students, title='Участники')
+
+
+@app.route('/uchreg', methods=['GET', 'POST'])
+@login_required
+def uchreg():
+    db_sess = db_session.create_session()
+
+    if request.method == 'POST':
+        # Добавление нового участника
+        name = request.form.get('name')
+        place = request.form.get('place')
+
+        if name and place:
+            student = Students(name=name, place=place, author=current_user.id)
+            db_sess.add(student)
+            db_sess.commit()
+            return redirect('/c')
+
+    # Получение всех участников
+    students = db_sess.query(Students).filter(Students.author == current_user.id).all()
+    return render_template('uchreg.html', students=students, title='Регистрация участников')
 
 
 
@@ -270,12 +173,12 @@ def first():
             msg = MIMEText(f'''Подтвердите учетную запись от Gim17, перейдя по ссылке: {confirm_url}.\n 
                 Если вы не отправляли запрос, игнорируйте это сообщение''', 'html')
             msg['Subject'] = 'Account Confirmation Required'
-            msg['From'] = 'valerylarionov06@gmail.com'
+            msg['From'] = 'kvondeniz@yandex.ru'
             msg['To'] = user.email
 
             with smtplib.SMTP('smtp.gmail.com', 587) as server:
                 server.starttls()
-                server.login('valerylarionov06@gmail.com', 'hafg vjqg nywe khnu')
+                server.login('kvondeniz@yandex.ru', 'hafg vjqg nywe khnu')
                 server.sendmail('valerylarionov06@gmail.com', [user.email], msg.as_string())
                 text = 'Зайдите на почту и подтвердите свою учетную запись в течение трёх минут'
 
@@ -291,7 +194,8 @@ def first():
         confirmed_check.append(confirm)
         authors.append(f"{name} {surname}")
         # new.data = get_str_time(new.data)
-        new.date = datetime.datetime.now()
+
+
     info = {
         'news': news,
         'authors': authors,
@@ -313,8 +217,9 @@ def first():
         encoded_string = encoded_string.replace("b'", '').replace("'", '')
         result_image.append(encoded_string)
 
-    return render_template('news.html', **info, title='Gim17', text=text, action='',
-                           image=result_image)
+
+
+    return render_template('news.html', **info, title='Gim17', text=text, action='', image=result_image)
 
 
 
@@ -339,7 +244,8 @@ def news_edit(id):
             form.format.data = new_check.format
             form.url.data = new_check.url
             form.place.data = new_check.place
-            # form.date_field.data = new_check.date_field
+            form.date.data = new_check.date
+
             form.private.data = new_check.private
         else:
             abort(404)
@@ -373,9 +279,9 @@ def news_edit(id):
                 new_obj.format = form.format.data
                 new_obj.url = form.url.data
                 new_obj.place = form.place.data
+                new_obj.date = form.date.data
                 # new_obj.date_field = form.date_field.data
                 new_obj.private = form.private.data
-                db_sess.merge(new_obj)
                 db_sess.commit()
                 return redirect('/')
 
@@ -679,6 +585,13 @@ def new_news():
                                    title='Редактирование работы',
                                    form=form,
                                    message='Слишком длинное описание (максимум 1000 символов)')
+
+        if form.date.data and form.date.data < datetime.date.today():
+            return render_template('new_news.html',
+                                   title='Новый конкурс',
+                                   form=form,
+                                   message='Дата не может быть в прошлом')
+
         news = News(
             author=user_id,
             name=form.name.data,
@@ -688,6 +601,7 @@ def new_news():
             organizer=form.organizer.data,
             url=form.url.data,
             place=form.place.data,
+            date=form.date.data,  # Добавлено поле даты
             private=form.private.data,
         )
         db_sess.add(news)
@@ -698,7 +612,7 @@ def new_news():
         news.data_str = get_str_time(news.data)
         db_sess.commit()
         return redirect("/")
-    return render_template('new_news.html', form=form, title='Новая новость')
+    return render_template('new_news.html', form=form, title='Новый конкурс')
 
 
 def send_email(db_sess):
@@ -707,13 +621,13 @@ def send_email(db_sess):
     confirm_url = f'{request.host}/confirm/{confirmation_code}'
     msg = MIMEText(f'''Please confirm your account by clicking the link below: {confirm_url}''', 'html')
     msg['Subject'] = 'Account Confirmation Required'
-    msg['From'] = 'valerylarionov06@gmail.com'
+    msg['From'] = 'kvondeniz@yandex.ru'
     msg['To'] = user.email
 
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
-        server.login('valerylarionov06@gmail.com', 'hafg vjqg nywe khnu')
-        server.sendmail('valerylarionov06@gmail.com', [user.email], msg.as_string())
+        server.login('kvondeniz@yandex.ru', 'hafg vjqg nywe khnu')
+        server.sendmail('kvondeniz@yandex.ru', [user.email], msg.as_string())
 
 
 @app.route('/home/<int:id>', methods=['GET', 'POST'])
@@ -764,7 +678,7 @@ def logout():
 @app.route('/im', methods=['GET', 'POST'])
 def im():
     if not current_user.is_authenticated:
-        return '<h1 align="center">Войди в аккаунт, и не балуйся с ссылками ;)</h1>'
+        return '<h1 align="center">Войдите в аккаунт ;)</h1>'
     form = SmsForm()
     id_user = request.args.get('sel')
     id_chat = request.args.get('ch')
@@ -781,249 +695,7 @@ def im():
         return render_template(template_name_or_list='im.html', form=form, title=user.name)
 
 
-@app.route('/search_user', methods=['GET', 'POST'])
-def search_user():
-    if not current_user.is_authenticated:
-        abort(404)
 
-    db_sess = db_session.create_session()
-    all_users = db_sess.query(User).filter(User.id != current_user.id).all()
-    not_friends = []
-    not_friends_image = []
-    for elem in all_users:
-        check_users = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                    Friends.second_id == elem.id).first()
-        if not check_users or check_users.mans_attitude != 'friends':
-            image = db_sess.query(Images).filter(Images.user_id == elem.id).first()
-            if image:
-                image = image.b64_image
-                encoded_string = str(image)
-                encoded_string = encoded_string.replace("b'", '').replace("'", '')
-                not_friends_image.append(encoded_string)
-            not_friends.append(elem)
-
-    info = {
-        'users': not_friends,
-        'image': not_friends_image
-    }
-
-    if request.method == 'POST' and 'search' in request.form and len(request.form['search'].strip()) > 0:
-        name_search = request.form['search']
-        not_friends_image = []
-        if len(name_search.strip()) > 0:
-            user_with_search = []
-            for elem in not_friends:
-                if name_search.lower() in elem.name.lower():
-                    user_with_search.append(elem)
-
-            for elem in user_with_search:
-                image = db_sess.query(Images).filter(Images.user_id == elem.id).first()
-                if image:
-                    image = image.b64_image
-                    encoded_string = str(image)
-                    encoded_string = encoded_string.replace("b'", '').replace("'", '')
-                    not_friends_image.append(encoded_string)
-
-            info = {
-                'users': user_with_search,
-                'image': not_friends_image
-            }
-        return render_template('search_user.html', **info, title='Поиск друзей', action='btn')
-    elif request.method == 'POST' and 'all' in request.form:
-        return render_template('search_user.html', **info, title='Поиск друзей', action='')
-    return render_template('search_user.html', **info, title='Поиск друзей', action='')
-
-
-@app.route('/user/<int:id>', methods=['GET', 'POST'])
-def user(id):
-    db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.id == id).first()
-
-    if current_user.is_authenticated and current_user.id == id:
-        return redirect(f'/home/{id}')
-    not_friends_image = []
-    image = db_sess.query(Images).filter(Images.user_id == id).first()
-    if image:
-        image = image.b64_image
-        encoded_string = str(image)
-        encoded_string = encoded_string.replace("b'", '').replace("'", '')
-
-    info = {
-        'image': encoded_string,
-        'user': user
-    }
-    if request.method == 'POST':
-        if 'add_friend' in request.form:
-
-            check_blocked = db_sess.query(Friends).filter(Friends.first_id == id,
-                                                          Friends.second_id == current_user.id).first()
-            if check_blocked and check_blocked.mans_attitude == 'ban':
-                return render_template('user_id.html', **info, title=user.name,
-                                       text='Пользователь вас заблокировал')
-
-            check_friend = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                         Friends.second_id == id).first()
-            if not check_friend:  # если это первый запрос на дружбу и нет блокировок
-                first_zapic = Friends()
-                first_zapic.first_id = current_user.id
-                first_zapic.second_id = id
-                first_zapic.mans_attitude = 'sent'
-
-                second_zapic = Friends()
-                second_zapic.first_id = id
-                second_zapic.second_id = current_user.id
-                second_zapic.mans_attitude = 'received'
-
-                db_sess.add(second_zapic)
-
-                db_sess.add(first_zapic)
-
-                db_sess.commit()
-                return render_template('user_id.html', **info, title=user.name,
-                                       text='Запрос был отправлен',
-                                       button_info='sent')
-
-            else:
-                if check_friend.mans_attitude == 'ban':
-                    return render_template('user_id.html', **info, title=user.name,
-                                           text='Вы не можете отправить запрос этому пользователю.', button_info='add')
-
-                elif check_friend.mans_attitude == 'sent':  # запрос на ожидании
-                    return render_template('user_id.html', **info, title=user.name,
-                                           text='Вы уже отправляли запрос этому пользователю', button_info='sent')
-                elif check_friend.mans_attitude == 'received':
-                    return render_template('user_id.html', **info, title=user.name,
-                                           text='Этот пользователь хочет с вами дружить!', button_info='add')
-
-        elif 'sumbit' in request.form:
-            check_friend = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                         Friends.second_id == id).first()
-            check_friend.mans_attitude = 'friends'
-            check_friend_2 = db_sess.query(Friends).filter(Friends.first_id == id,
-                                                           Friends.second_id == current_user.id).first()
-            check_friend_2.mans_attitude = 'friends'
-            db_sess.commit()
-            return redirect('/')
-
-        elif 'delete' in request.form:
-            return render_template('user_id.html', **info, title=user.name, button_info='dialog',
-                                   name=user.name)
-
-        elif 'yes' in request.form:
-            first = db_sess.query(Friends).filter(Friends.first_id == id,
-                                                  Friends.second_id == current_user.id).first()
-            second = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                   Friends.second_id == id).first()
-            db_sess.delete(first)
-            db_sess.delete(second)
-            db_sess.commit()
-            return render_template('user_id.html', **info, title=user.name,
-                                   text=f'Пользователь {user.name} был удален из ваших друзей', button_info='add')
-        elif 'cancel_friend' in request.form:
-            first = db_sess.query(Friends).filter(Friends.first_id == id,
-                                                  Friends.second_id == current_user.id).first()
-            second = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                   Friends.second_id == id).first()
-            db_sess.delete(first)
-            db_sess.delete(second)
-            db_sess.commit()
-            return render_template('user_id.html', **info, title=user.name,
-                                   text='Предложение отклонено',
-                                   button_info='add')
-
-        elif 'cancel_request' in request.form:
-            first = db_sess.query(Friends).filter(Friends.first_id == id,
-                                                  Friends.second_id == current_user.id).first()
-            second = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                   Friends.second_id == id).first()
-            db_sess.delete(first)
-            db_sess.delete(second)
-            db_sess.commit()
-            return render_template('user_id.html', **info, title=user.name, text='Запрос отменен',
-                                   button_info='add')
-    try:
-        check_friend = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                     Friends.second_id == id).first()
-        if check_friend.mans_attitude == 'received':
-            return render_template('user_id.html', **info, title=user.name,
-                                   text='Этот пользователь хочет с вами дружить!', button_info='sumbit')
-    except Exception:  # записи не нашлось в бд
-        try:
-            return render_template('user_id.html', **info, title=user.name, text='', button_info='add')
-        except Exception:
-            abort(404)
-
-    check_friend = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                 Friends.second_id == id).first()
-    if check_friend.mans_attitude == 'friends':
-        return render_template('user_id.html', **info, title=user.name, text='', button_info='other')
-    if check_friend.mans_attitude == 'sent':
-        return render_template('user_id.html', **info, title=user.name, text='', button_info='sent')
-    return render_template('user_id.html', **info, title=user.name, text='', button_info='add')
-
-
-@app.route('/friends', methods=['GET', 'POST'])
-def friends():
-    if not current_user.is_authenticated:
-        abort(404)
-
-    db_sess = db_session.create_session()
-    friends_info = db_sess.query(Friends).filter(Friends.second_id == current_user.id,
-                                                 Friends.mans_attitude == 'friends').all()
-    friends_id = list(map(lambda x: x.first_id, friends_info))
-    friends = db_sess.query(User).filter(User.id.in_(friends_id)).all()
-
-    friends_images = []
-    for elem in friends:
-        image = db_sess.query(Images).filter(Images.user_id == elem.id).first().b64_image
-        encoded_string = str(image)
-        encoded_string = encoded_string.replace("b'", '').replace("'", '')
-        friends_images.append(encoded_string)
-    if request.method == 'POST' and 'search' in request.form and len(request.form['search'].strip()) > 0:
-        friends = list(filter(lambda x: request.form['search'].lower() in x.name.lower(), friends))
-
-        friends_images = []
-        for elem in friends:
-            image = db_sess.query(Images).filter(Images.user_id == elem.id).first().b64_image
-            encoded_string = str(image)
-            encoded_string = encoded_string.replace("b'", '').replace("'", '')
-            friends_images.append(encoded_string)
-
-        return render_template('friends.html', friends=friends, title='Друзья', action='btn',
-                               image=friends_images)
-    elif request.method == 'POST' and 'all' in request.form:
-        return render_template('friends.html', friends=friends, title='Друзья', action='',
-                               image=friends_images)
-    return render_template('friends.html', friends=friends, title='Друзья', action='',
-                           image=friends_images)
-
-
-@app.route('/friend_requests')
-def friend_requests():
-    if not current_user.is_authenticated:
-        abort(404)
-
-    db_sess = db_session.create_session()
-    friend_requests = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                                    Friends.mans_attitude == 'received').all()
-    if not current_user:
-        return redirect('/')
-    all_image = []
-    users = []
-    for user in friend_requests:
-        user = db_sess.query(User).filter(User.id == user.second_id).first()
-        users.append(user)
-        image = db_sess.query(Images).filter(Images.user_id == user.id).first().b64_image
-        encoded_string = str(image)
-        encoded_string = encoded_string.replace("b'", '').replace("'", '')
-        all_image.append(encoded_string)
-
-    info = {
-        'users': users,
-        'title': 'Заявки в друзья',
-        'image': all_image,
-    }
-    return render_template('friend_requests.html', **info)
 
 
 @app.route('/help')

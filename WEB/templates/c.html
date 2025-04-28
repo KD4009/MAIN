@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="" class="login_form" method="post">
+    <link rel='stylesheet' href="templates/table.css">
+    <h1 align="center">Участники</h1>
+    <div>
+        <a href="/uchreg" class="btn btn-primary btn_sms">
+            Добавить участника
+        </a>
+    </div>
+    <table align="center" class="table">
+        <tr class="table__header">
+            <th class="table__cell">Имя</th>
+            <th>Место</th>
+        </tr>
+        {% for student in students %}
+        <tr>
+            <td>{{ student.name }}</td>
+            <td>{{ student.place }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h3 align="center">Вы дошли до конца!</h3>
+</form>
+{% endblock %}

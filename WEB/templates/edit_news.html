@@ -68,17 +68,26 @@
             </div>
         {% endfor %}
     </p>
+    <p>
+        {{ form.date.label }}<br>
+        {{ form.date(class="form-control", type="date") }}<br>
+        {% for error in form.date.errors %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </p>
     <p>{{ form.private() }} {{ form.private.label }}</p>
 
     {% if action == 'confirm_del' %}
     <div>
-        <h4 align="center">Вы уверены, что хотите удалить эту новость?</h4>
+        <h4 align="center">Вы уверены, что хотите удалить этот конкурс?</h4>
         <button style="margin-left: 37%" name="yes" type="submit" class="btn btn-danger">Удалить</button>
         <button name="no" type="submit" class="btn btn-primary">Отмена</button><br>
     </div>
     {% else %}
         <button name="edit" type="submit" class="btn btn-primary btn_sms">Принять изменения</button>
-        <button name="confirm_del" type="submit" class="btn btn-danger btn_sms">Удалить новость</button>
+        <button name="confirm_del" type="submit" class="btn btn-danger btn_sms">Удалить конкурс</button>
     {% endif %}
 
     <div>{{ message }}</div>

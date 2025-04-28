@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 import datetime
-from wtforms import PasswordField, StringField, SubmitField, EmailField, BooleanField, SelectField
+from wtforms import PasswordField, StringField, SubmitField, EmailField, BooleanField, SelectField, DateField
 from wtforms.validators import DataRequired
 
 
@@ -32,6 +32,7 @@ class NewsForm(FlaskForm):
                         validators=[DataRequired()])
     url = StringField('*Ссылка на итоги конкурса', validators=[DataRequired()])
     place = StringField('*Место проведения конкурса', validators=[DataRequired()])
+    date = DateField('Дата проведения', validators=[DataRequired()])
     private = BooleanField('Сделать новость приватной')
 
     submit = SubmitField('Создать новость')

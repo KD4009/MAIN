@@ -21,6 +21,7 @@ class News(SqlAlchemyBase, UserMixin):
     place = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     data_str = sqlalchemy.Column(sqlalchemy.String, default='')
     private = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.today())
 
     user_relationship = orm.relationship("User", back_populates="news_relationship")
 

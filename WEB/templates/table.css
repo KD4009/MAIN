@@ -1,0 +1,8 @@
+tr:nth-child(even) {
+    background-color: #e5e5e5;
+}
+
+
+.table__header {
+    text-align: right;
+}

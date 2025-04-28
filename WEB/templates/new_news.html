@@ -68,6 +68,16 @@
             </div>
         {% endfor %}
     </p>
+    <p>
+        {{ form.date.label }}<br>
+        {{ form.date(class="form-control", type="date") }}<br>
+        {% for error in form.date.errors %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endfor %}
+    </p>
+
     <p>{{ form.private() }} {{ form.private.label }}</p>
     <p>{{ form.submit(type="submit", class="btn btn-primary") }}</p>
     <div>{{ message }}</div>

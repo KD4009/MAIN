@@ -22,7 +22,7 @@
         <span style="font-weight:bold"> <h6>формат: {{ new.form }}</h6></span>
         <span style="font-weight:bold"> <h6>ссылка на итоги конкурса: {{ new.url }}</h6></span>
         <span style="font-weight:bold"> <h6>место проведения конкурса: {{ new.place }}</h6></span>
-
+        <span style="font-weight:bold"> <h6>дата проведения: {{ new.date.strftime('%d.%m.%Y') }}</h6></span>
 
         {% if current_user.is_authenticated and current_user == new.user_relationship %}
             <div>
@@ -31,7 +31,7 @@
                 </a>
             </div><br>
             <div>
-                <a href="/edit_news/{{ new.id }}" class="btn btn-primary btn_sms">
+                <a href="/c" class="btn btn-primary btn_sms">
                     Участники
                 </a>
             </div>
@@ -42,7 +42,7 @@
             </a>
         </div><br>
         <div>
-                <a href="/edit_news/{{ new.id }}" class="btn btn-primary btn_sms">
+                <a href="/c" class="btn btn-primary btn_sms">
                     Участники
                 </a>
         </div>
@@ -73,20 +73,6 @@
         {% endif %}
     {% else %}
         {% if confirm_check[loop.index - 1] == False %}
-            <div align="right">
-                <img src="data:image/png;base64, {{ image[loop.index0] }}" alt="ava" width="20" height="25"/>
-            </div>
-            <div>
-                <a href="/edit_news/{{ new.id }}" class="btn btn-primary btn_sms">
-                    Участники
-                </a>
-            </div>
-            <p align="right">{{ authors[loop.index - 1] }}</p>
-        {% else %}
-        <div align="right">
-            <img src="data:image/png;base64, {{ image[loop.index0] }}" alt="ava" width="20" height="25"/>
-        </div>
-        <h5 align="right">{{ authors[loop.index - 1] }}<img src="{{url_for('static', filename='img/galka.png')}}" style="max-width: 3.14%"></h5>
 
         {% endif %}
     {% endif %}
