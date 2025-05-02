@@ -9,15 +9,14 @@ import os
 from WEB.models.students import Students
 from models.users import User
 from models.news import News
-from models.friends import Friends
-from models.messages import Messages
+
 from models.images import Images
 from models import db_session
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 from forms.login import LoginForm
 from forms.reg_form import RegForm
 from forms.news_form import NewsForm
-from forms.sms_form import SmsForm
+
 from forms.edit_news_form import EditNewsForm
 from forms.user_edit import UserEditForm
 from translate import eng_to_rus, rus_to_eng, make_translate
