@@ -26,7 +26,7 @@ import datetime
 from check_correct_data_input import check_correct_email, check_correct_password, check_correct_domen_user
 import git
 
-from api import get_setup
+
 import pytz
 from itsdangerous import URLSafeTimedSerializer
 import smtplib
@@ -371,8 +371,7 @@ def edit_home(id):
                                        form=form,
                                        title='Редактирование профиля')
 
-        if form.update_setup.data:
-            user.setup = get_setup()
+
 
         user.name = name
         user.surname = surname
@@ -463,9 +462,9 @@ def confirm(confirmation_code):
             return render_template('home.html', text='Вы подтвердили вашу учетную запись',
                                    stop='stop', ava=encoded_string)
         else:
-            return render_template('confirmed_sms.html', title='NaSvyazi', text='Неизвестная ошибка')
+            return render_template('confirmed_sms.html', title='Gim17', text='Неизвестная ошибка')
     except Exception as text:
-        return render_template('confirmed_sms.html', title='NaSvyazi',
+        return render_template('confirmed_sms.html', title='Gim17',
                                text='Ошибка, возможно, превышено время. Попробуйте еще раз')
 
 
@@ -522,14 +521,14 @@ def registration():
             return render_template('registration.html', message=f"Ошибка регистрации: "
                                                                 f"пароли не совпадают", form=form, title='Регистрация')
 
-        setup = get_setup()
+
         user = User(
             name=name,
             surname=surname,
             email=form.email.data,
             age=form.age.data,
             city=city,
-            setup=setup,
+
             domen='ы'
         )
         user.set_password(form.password.data)
@@ -673,27 +672,6 @@ def home(id):
 def logout():
     logout_user()
     return redirect("/")
-
-
-@app.route('/im', methods=['GET', 'POST'])
-def im():
-    if not current_user.is_authenticated:
-        return '<h1 align="center">Войдите в аккаунт ;)</h1>'
-    form = SmsForm()
-    id_user = request.args.get('sel')
-    id_chat = request.args.get('ch')
-
-    db_sess = db_session.create_session()
-    is_friends = db_sess.query(Friends).filter(Friends.first_id == current_user.id,
-                                               Friends.second_id == id_user).all()
-    if is_friends:
-        user = db_sess.query(User).filter(User.id == id_user).first()
-    else:
-        return redirect('404')
-
-    if user:
-        return render_template(template_name_or_list='im.html', form=form, title=user.name)
-
 
 
 
