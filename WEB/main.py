@@ -84,33 +84,6 @@ def send():
     return {'ok': True}
 
 
-@app.route('/all_users', methods=['GET', 'POST'])
-def all_users():
-    if not current_user.is_authenticated:
-        return abort(404)
-
-    db_sess = db_session.create_session()
-    users = db_sess.query(User).filter(User.id != current_user.id).all()
-    users = sorted(users, key=lambda x: (x.surname, x.name))
-    all_image = []
-    for elem in users:
-        image = db_sess.query(Images).filter(Images.user_id == elem.id).first().b64_image
-        encoded_string = str(image)
-        encoded_string = encoded_string.replace("b'", '').replace("'", '')
-        all_image.append(encoded_string)
-
-    if request.method == 'POST' and 'search' in request.form and len(request.form['search'].strip()) > 0:
-        users = list(filter(lambda x: request.form['search'].lower() in x.name.lower(), users))
-        all_image = []
-        for elem in users:
-            print(elem.id)
-            image = db_sess.query(Images).filter(Images.user_id == elem.id).first()
-            print(image.user_id)
-            encoded_string = str(image.b64_image)
-            encoded_string = encoded_string.replace("b'", '').replace("'", '')
-            all_image.append(encoded_string)
-        return render_template('all_users.html', users=users, action='btn', image=all_image)
-    return render_template('all_users.html', users=users, action='', image=all_image)
 
 
 
@@ -170,7 +143,7 @@ def first():
             user = db_sess.query(User).filter(User.email == current_user.email).first()
             confirmation_code = serializer.dumps(user.id, salt='confirm-salt')
             confirm_url = f'{request.host}/confirm/{confirmation_code}'
-            msg = MIMEText(f'''Подтвердите учетную запись от Gim17, перейдя по ссылке: {confirm_url}.\n 
+            msg = MIMEText(f'''Подтвердите учетную запись от Gym17, перейдя по ссылке: {confirm_url}.\n 
                 Если вы не отправляли запрос, игнорируйте это сообщение''', 'html')
             msg['Subject'] = 'Account Confirmation Required'
             msg['From'] = 'kvondeniz@yandex.ru'
@@ -219,7 +192,7 @@ def first():
 
 
 
-    return render_template('news.html', **info, title='Gim17', text=text, action='', image=result_image)
+    return render_template('news.html', **info, title='Gym17', text=text, action='', image=result_image)
 
 
 
@@ -251,7 +224,7 @@ def news_edit(id):
             abort(404)
     if form.validate_on_submit():
         new_obj = db_sess.query(News).filter(News.id == id).filter(News.author == current_user.id).first()
-        if current_user.email == 'regeneration76@yandex.ru' or current_user.email == 'valerylarionov06@gmail.com':
+        if current_user.email == 'kvondeniz@yandex.ru':
             new_obj = db_sess.query(News).filter(News.id == id).first()
         if 'edit' in request.form:
             if new_obj:
@@ -462,9 +435,9 @@ def confirm(confirmation_code):
             return render_template('home.html', text='Вы подтвердили вашу учетную запись',
                                    stop='stop', ava=encoded_string)
         else:
-            return render_template('confirmed_sms.html', title='Gim17', text='Неизвестная ошибка')
+            return render_template('confirmed_sms.html', title='Gym17', text='Неизвестная ошибка')
     except Exception as text:
-        return render_template('confirmed_sms.html', title='Gim17',
+        return render_template('confirmed_sms.html', title='Gym17',
                                text='Ошибка, возможно, превышено время. Попробуйте еще раз')
 
 
@@ -623,7 +596,7 @@ def send_email(db_sess):
     msg['From'] = 'kvondeniz@yandex.ru'
     msg['To'] = user.email
 
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
+    with smtplib.SMTP('kvondeniz@yandex.ru', 587) as server:
         server.starttls()
         server.login('kvondeniz@yandex.ru', 'hafg vjqg nywe khnu')
         server.sendmail('kvondeniz@yandex.ru', [user.email], msg.as_string())
