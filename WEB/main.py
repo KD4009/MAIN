@@ -6,7 +6,7 @@ from time import time
 import requests
 import os
 
-from WEB.models.students import Students
+from models.students import Students
 from models.users import User
 from models.news import News
 
