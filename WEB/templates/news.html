@@ -2,18 +2,74 @@
 
 {% block content %}
 
-<form action="" class="login_form" method="post">
+<form action="" class="fil" method="get">
+<div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+    <form method="get" class="row g-3">
+        <!-- Поиск по названию -->
+        <div>
+            <input type="text" name="search" class="form-control" placeholder="Название конкурса" value="{{ search_query }}">
+        </div>
+
+
+        <div class="col-md-5">
+            <select name="organizer" class="form-select">
+                <option value="">Все организаторы</option>
+                {% for org in organizers %}
+                    <option value="{{ org }}" {% if organizer_filter == org %}selected{% endif %}>{{ org }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="level" class="form-select">
+                <option value="">Все уровни</option>
+                {% for lvl in levels %}
+                    <option value="{{ lvl }}" {% if level_filter == lvl %}selected{% endif %}>{{ lvl }}</option>
+                {% endfor %}
+            </select>
+            <select name="format" class="form-select">
+                <option value="">Все форматы</option>
+                {% for fmt in formats %}
+                    <option value="{{ fmt }}" {% if format_filter == fmt %}selected{% endif %}>{{ fmt }}</option>
+                {% endfor %}
+            </select>
+            <select name="place" class="form-select">
+                <option value="">Все места</option>
+                {% for plc in places %}
+                    <option value="{{ plc }}" {% if place_filter == plc %}selected{% endif %}>{{ plc }}</option>
+                {% endfor %}
+            </select>
+            <div class="input-group">
+                <span class="input-group-text">От</span>
+                <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                <span class="input-group-text">До</span>
+                <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+        </div>
+
+
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+        <div class="col-md-2">
+            <a href="/" class="btn btn-secondary w-100">Сбросить</a>
+        </div>
+    </form>
+</div>
+</form>
+
+<form action="" class="login_form" method="get">
     <h1 align="center">Главная</h1>
     {% if current_user.is_authenticated %}
         <a href="/new_news" class="btn btn-warning">Добавить конкурс</a>
-
+        <a href="/export_news_to_excel" class="btn btn-success">Выгрузить в Excel</a>
     {% else %}
         <a href="/login" class="links"><i class="bi bi-person-add"></i> Войдите в аккаунт</a><a></a>
     {% endif %}
     <hr>
+
+
     {% for new in news %}
     {% if (current_user.is_authenticated and new.private == True) or (new.private == False) %}
-        <h3 class="transfate" align="center">{{ new.name }}</h3>
+    <h3 class="transfate" align="center">{{ new.name }}</h3>
 
 
         <span style="font-weight:bold"> <h6>организатор: {{ new.organizer }}</h6></span>
@@ -30,23 +86,19 @@
                     Настройки конкурса
                 </a>
             </div><br>
+        {% elif current_user.is_authenticated and (current_user.email == 'kvondeniz@yandex.ru') %}
             <div>
-                <a href="/c" class="btn btn-primary btn_sms">
-                    Участники
+                <a href="/edit_news/{{ new.id }}" class="btn btn-primary btn_sms">
+                    Настройки конкурса
                 </a>
-            </div>
-         {% elif current_user.is_authenticated and (current_user.email == 'regeneration76@yandex.ru' or current_user.email == 'valerylarionov06@gmail.com') %}
-        <div>
-            <a href="/edit_news/{{ new.id }}" class="btn btn-primary btn_sms">
-                Настройки конкурса
-            </a>
-        </div><br>
-        <div>
-                <a href="/c" class="btn btn-primary btn_sms">
-                    Участники
-                </a>
-        </div>
+            </div><br>
         {% endif %}
+
+    <div>
+        <a href="/c?contest_id={{ new.id }}" class="btn btn-primary btn_sms">
+            Участники
+        </a>
+    </div>
     {% if current_user.is_authenticated %}
         <div align="right">
             <img src="data:image/png;base64, {{ image[loop.index0] }}" alt="ava" width="20" height="25"/>
@@ -79,6 +131,8 @@
     <hr>
     {% endif %}
     {% endfor %}
+
     <h3 align="center">Вы дошли до конца!</h3>
 </form>
+
 {% endblock %}

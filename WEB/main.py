@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, abort
-
+import pandas as pd
+from io import BytesIO
+from flask import send_file
 import base64
 import ast
 from time import time
 import requests
 import os
 
-from WEB.models.students import Students
+from models.students import Students
 from models.users import User
 from models.news import News
 
@@ -19,7 +21,7 @@ from forms.news_form import NewsForm
 
 from forms.edit_news_form import EditNewsForm
 from forms.user_edit import UserEditForm
-from translate import eng_to_rus, rus_to_eng, make_translate
+
 from time_news import get_str_time
 import datetime
 from check_correct_data_input import check_correct_email, check_correct_password, check_correct_domen_user
@@ -32,7 +34,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'ebfqwejg;asdlp1LJNpjqwfffaffaWFEKffffwwwjwEKHFNLk;llffldmsdg'
+app.config['SECRET_KEY'] = '37f36414-d7e6-4f6a-8c4f-7e490e7ec745'
 db_session.global_init("db/db.db")
 
 
@@ -83,9 +85,6 @@ def send():
     return {'ok': True}
 
 
-
-
-
 @app.route('/secret_update', methods=["POST"])
 def webhook():
     if request.method == 'POST':
@@ -103,40 +102,113 @@ def load_user(user_id):
     return db_sess.get(User, user_id)
 
 
-@app.route('/c')
+@app.route('/export_news_to_excel')
 @login_required
+def export_news_to_excel():
+    if current_user.email not in ['kvondeniz@yandex.ru']:
+        abort(403)
+
+    db_sess = db_session.create_session()
+    news = db_sess.query(News).all()
+
+    data = []
+    for new in news:
+        author = db_sess.query(User).filter(User.id == new.author).first()
+        author_name = f"{author.name} {author.surname}" if author else "Неизвестный автор"
+
+        data.append({
+            'Название': new.name,
+            'Организатор': new.organizer,
+            'Уровень': new.level,
+            'Номинация': new.text,
+            'Формат': new.format,
+            'Ссылка на итоги конкурса': new.url,
+            'Место проведения': new.place,
+            'Дата проведения': new.date.strftime('%d.%m.%Y') if new.date else '',
+
+
+        })
+
+    df = pd.DataFrame(data)
+
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='Конкурсы', index=False)
+    writer.close()
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='конкурсы.xlsx'
+    )
+
+
+@app.route('/c')
 def c():
     db_sess = db_session.create_session()
-    students = db_sess.query(Students).filter(Students.author == current_user.id).all()
-    return render_template('c.html', students=students, title='Участники')
+    contest_id = request.args.get('contest_id', type=int)
+
+    if contest_id:
+        # Получаем только участников данного конкурса
+        students = db_sess.query(Students).filter(Students.contest_id == contest_id).all()
+        # Получаем информацию о конкурсе
+        contest = db_sess.query(News).filter(News.id == contest_id).first()
+        contest_name = contest.name if contest else "Неизвестный конкурс"
+    else:
+        students = []
+        contest_name = "Все участники"
+
+    return render_template(
+        'c.html',
+        students=students,
+        title=f'Участники конкурса: {contest_name}',
+        contest_id=contest_id
+    )
 
 
 @app.route('/uchreg', methods=['GET', 'POST'])
 @login_required
 def uchreg():
+    contest_id = request.args.get('contest_id', type=int)
     db_sess = db_session.create_session()
 
     if request.method == 'POST':
-        # Добавление нового участника
         name = request.form.get('name')
         place = request.form.get('place')
+        contest_id = request.form.get('contest_id', type=int)
 
-        if name and place:
-            student = Students(name=name, place=place, author=current_user.id)
+        if name and place and contest_id:
+            student = Students(
+                name=name,
+                place=place,
+                author=current_user.id,
+                contest_id=contest_id
+            )
             db_sess.add(student)
             db_sess.commit()
-            return redirect('/c')
+            return redirect(f'/c?contest_id={contest_id}')
 
-    # Получение всех участников
-    students = db_sess.query(Students).filter(Students.author == current_user.id).all()
-    return render_template('uchreg.html', students=students, title='Регистрация участников')
-
+    return render_template(
+        'uchreg.html',
+        title='Регистрация участников',
+        contest_id=contest_id
+    )
 
 
 @app.route('/', methods=['GET', 'POST'])
 def first():
     db_sess = db_session.create_session()
     text = ''
+    search_query = request.args.get('search', '').strip()
+    organizer_filter = request.args.get('organizer', '').strip()
+    level_filter = request.args.get('level', '').strip()
+    format_filter = request.args.get('format', '').strip()
+    place_filter = request.args.get('place', '').strip()
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
+
     if request.method == 'POST':
         if 'confirm' in request.form:
             user = db_sess.query(User).filter(User.email == current_user.email).first()
@@ -154,25 +226,68 @@ def first():
                 server.sendmail('valerylarionov06@gmail.com', [user.email], msg.as_string())
                 text = 'Зайдите на почту и подтвердите свою учетную запись в течение трёх минут'
 
-    news = db_sess.query(News).all()
+    query = db_sess.query(News)
+
+    if search_query:
+        query = query.filter(News.name.ilike(f'%{search_query}%'))
+    if organizer_filter:
+        query = query.filter(News.organizer.ilike(f'%{organizer_filter}%'))
+    if level_filter:
+        query = query.filter(News.level.ilike(f'%{level_filter}%'))
+    if format_filter:
+        query = query.filter(News.format.ilike(f'%{format_filter}%'))
+    if place_filter:
+        query = query.filter(News.place.ilike(f'%{place_filter}%'))
+
+    try:
+        if date_from:
+            date_from_obj = datetime.datetime.strptime(date_from, '%Y-%m-%d').date()
+            query = query.filter(News.date >= date_from_obj)
+        if date_to:
+            date_to_obj = datetime.datetime.strptime(date_to, '%Y-%m-%d').date()
+            query = query.filter(News.date <= date_to_obj)
+    except ValueError:
+        pass
+
+    news = query.all()
     news = news[::-1]
+
+    organizers = db_sess.query(News.organizer).distinct().all()
+    levels = db_sess.query(News.level).distinct().all()
+    formats = db_sess.query(News.format).distinct().all()
+    places = db_sess.query(News.place).distinct().all()
 
     authors = []
     confirmed_check = []
     for new in news:
-        name = db_sess.query(User).filter(User.id == new.author).first().name
-        surname = db_sess.query(User).filter(User.id == new.author).first().surname
-        confirm = db_sess.query(User).filter(User.id == new.author).first().confirmed
-        confirmed_check.append(confirm)
-        authors.append(f"{name} {surname}")
-        # new.data = get_str_time(new.data)
-
+        author = db_sess.query(User).filter(User.id == new.author).first()
+        if author:
+            name = author.name
+            surname = author.surname
+            confirm = author.confirmed
+            authors.append(f"{name} {surname}")
+            confirmed_check.append(confirm)
+        else:
+            authors.append("Неизвестный автор")
+            confirmed_check.append(False)
 
     info = {
         'news': news,
         'authors': authors,
-        'confirm_check': confirmed_check
+        'confirm_check': confirmed_check,
+        'search_query': search_query,
+        'organizer_filter': organizer_filter,
+        'level_filter': level_filter,
+        'format_filter': format_filter,
+        'place_filter': place_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'organizers': [org[0] for org in organizers if org[0]],
+        'levels': [lvl[0] for lvl in levels if lvl[0]],
+        'formats': [fmt[0] for fmt in formats if fmt[0]],
+        'places': [plc[0] for plc in places if plc[0]],
     }
+
     if current_user.is_authenticated:
         image = db_sess.query(Images).filter(Images.user_id == current_user.id).first()
         if not image:
@@ -184,12 +299,13 @@ def first():
             db_sess.commit()
     result_image = []
     for elem in news:
-        image = db_sess.query(Images).filter(Images.user_id == elem.author).first().b64_image
-        encoded_string = str(image)
-        encoded_string = encoded_string.replace("b'", '').replace("'", '')
-        result_image.append(encoded_string)
-
-
+        image = db_sess.query(Images).filter(Images.user_id == elem.author).first()
+        if image:
+            encoded_string = str(image.b64_image)
+            encoded_string = encoded_string.replace("b'", '').replace("'", '')
+            result_image.append(encoded_string)
+        else:
+            result_image.append('')
 
     return render_template('news.html', **info, title='Gym17', text=text, action='', image=result_image)
 
