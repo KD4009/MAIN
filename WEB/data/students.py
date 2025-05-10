@@ -9,4 +9,4 @@ class Students(SqlAlchemyBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     place = Column(String, nullable=False)
-    author = Column(Integer, nullable=False)  # ID пользователя, добавившего участника
+    author = Column(Integer, nullable=False)

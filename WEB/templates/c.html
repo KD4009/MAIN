@@ -3,12 +3,16 @@
 {% block content %}
 <form action="" class="login_form" method="post">
     <link rel='stylesheet' href="templates/table.css">
-    <h1 align="center">Участники</h1>
+    <h1 align="center">{{ title }}</h1>
+
+    {% if contest_id and current_user.is_authenticated %}
     <div>
-        <a href="/uchreg" class="btn btn-primary btn_sms">
+        <a href="/uchreg?contest_id={{ contest_id }}" class="btn btn-primary btn_sms">
             Добавить участника
         </a>
     </div>
+    {% endif %}
+
     <table align="center" class="table">
         <tr class="table__header">
             <th class="table__cell">Имя</th>
@@ -18,6 +22,10 @@
         <tr>
             <td>{{ student.name }}</td>
             <td>{{ student.place }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="2" align="center">Нет участников</td>
         </tr>
         {% endfor %}
     </table>

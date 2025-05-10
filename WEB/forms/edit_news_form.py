@@ -36,3 +36,4 @@ class EditNewsForm(FlaskForm):
     date = DateField('*Дата проведения', validators=[DataRequired()])
     private = BooleanField('Сделать новость приватной')
 
+

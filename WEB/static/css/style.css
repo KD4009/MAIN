@@ -9,6 +9,13 @@ aside {
     border-bottom: solid;
 }
 
+form.fil {
+
+    margin-left: 30%;
+    padding: 5px;
+    border-color: black;
+}
+
 form.login_form {
     max-width: 1000px;
     background: SeaGreen;
