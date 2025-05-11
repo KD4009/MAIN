@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<form action="" class="login_form" method="get">
+<div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+
+    <h1 align="center">{{ title }}</h1>
+    
+    <div class="student-info" style="margin-bottom: 20px;">
+        <h3>Участник: {{ student.name }}</h3>
+        <p>Лучший результат: {{ student.place }}</p>
+    </div>
+
+    <!-- Таблица конкурсов -->
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Название конкурса</th>
+                <th>Организатор</th>
+                <th>Уровень</th>
+                <th>Дата проведения</th>
+                <th>Место проведения</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contest in contests %}
+            <tr>
+                <td>{{ contest.name }}</td>
+                <td>{{ contest.organizer }}</td>
+                <td>{{ contest.level }}</td>
+                <td>{{ contest.date.strftime('%d.%m.%Y') if contest.date else 'Не указана' }}</td>
+                <td>{{ contest.place }}</td>
+                <td>
+                    <a href="/c?contest_id={{ contest.id }}" class="btn btn-sm btn-primary">
+                        Участники
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" align="center">Участник не зарегистрирован ни в одном конкурсе</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 20px;">
+        <a href="/all_students" class="btn btn-secondary">Назад к списку участников</a>
+    </div>
+</div>
+
+</form>
+{% endblock %}

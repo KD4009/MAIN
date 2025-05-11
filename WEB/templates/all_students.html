@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+<form action="" class="login_form" method="get">
+<div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+        <h1 align="center">{{ title }}</h1>
+
+    <!-- Форма фильтрации и поиска -->
+        <div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+            <form method="get" class="row g-5">
+            <!-- Поиск по имени -->
+                <div class="col-md-7">
+                    <input type="text" name="search" class="form-control" placeholder="Поиск по имени" value="{{ search_query }}">
+                </div>
+
+            <!-- Фильтр по конкурсу -->
+                <div class="col-md-5">
+                    <select name="contest" class="form-select">
+                        <option value="">Все конкурсы</option>
+                        {% for contest in contests %}
+                            <option value="{{ contest.id }}" {% if contest_filter == contest.id|string %}selected{% endif %}>
+                                {{ contest.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            <!-- Фильтр по месту -->
+                <div class="col-md-5">
+                    <input type="text" name="place" class="form-control" placeholder="Фильтр по месту" value="{{ place_filter }}">
+                </div>
+
+            <!-- Кнопки -->
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">Применить</button>
+                </div>
+                <div class="col-md-4">
+                    <a href="/all_students" class="btn btn-secondary w-100">Сбросить</a>
+                </div>
+            </form>
+        </div>
+
+     Таблица участников
+<table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Имя</th>
+                <th>Место</th>
+                <th>Конкурс</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.place }}</td>
+                <td>
+                    {% set contest = contests|selectattr('id', 'equalto', student.contest_id)|first %}
+                    {{ contest.name if contest else "Неизвестный конкурс" }}
+                </td>
+
+                <td>
+                    <a href="/student_contests/{{ student.id }}" class="btn btn-sm btn-info">
+                        Все конкурсы участника
+                    </a>
+                </td>
+
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" align="center">Нет участников</td>-->
+            </tr>-->
+            {% endfor %}
+        </tbody>
+</table>
+    </div>
+</div>
+</form>
+{% endblock %}
