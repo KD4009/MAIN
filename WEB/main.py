@@ -3,35 +3,27 @@ import pandas as pd
 from io import BytesIO
 from flask import send_file
 import base64
-import ast
 from time import time
-import requests
 import os
-
 from models.students import Students
 from models.users import User
 from models.news import News
-
 from models.images import Images
 from models import db_session
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 from forms.login import LoginForm
 from forms.reg_form import RegForm
 from forms.news_form import NewsForm
-
 from forms.edit_news_form import EditNewsForm
 from forms.user_edit import UserEditForm
-
 from time_news import get_str_time
 import datetime
 from check_correct_data_input import check_correct_email, check_correct_password, check_correct_domen_user
-import git
-
-
 import pytz
 from itsdangerous import URLSafeTimedSerializer
 import smtplib
 from email.mime.text import MIMEText
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '37f36414-d7e6-4f6a-8c4f-7e490e7ec745'
