@@ -5,7 +5,7 @@
 <form action="" class="fil" method="get">
 <div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
     <form method="get" class="row g-3">
-        <!-- Поиск по названию -->
+
         <div>
             <input type="text" name="search" class="form-control" placeholder="Название конкурса" value="{{ search_query }}">
         </div>
@@ -61,6 +61,8 @@
     {% if current_user.is_authenticated %}
         <a href="/new_news" class="btn btn-warning">Добавить конкурс</a>
         <a href="/export_news_to_excel" class="btn btn-success">Выгрузить в Excel</a>
+
+
     {% else %}
         <a href="/login" class="links"><i class="bi bi-person-add"></i> Войдите в аккаунт</a><a></a>
     {% endif %}

@@ -145,15 +145,72 @@ def export_news_to_excel():
     )
 
 
+@app.route('/all_students')
+@login_required
+def all_students():
+    db_sess = db_session.create_session()
+
+    # Получаем параметры фильтрации из запроса
+    search_query = request.args.get('search', '').strip()
+    contest_filter = request.args.get('contest', '').strip()
+    place_filter = request.args.get('place', '').strip()
+
+    # Создаем базовый запрос
+    query = db_sess.query(Students)
+
+    # Применяем фильтры
+    if search_query:
+        query = query.filter(Students.name.ilike(f'%{search_query}%'))
+    if contest_filter:
+        query = query.filter(Students.contest_id == contest_filter)
+    if place_filter:
+        query = query.filter(Students.place.ilike(f'%{place_filter}%'))
+
+    students = query.all()
+
+    # Получаем список всех конкурсов для фильтра
+    contests = db_sess.query(News).all()
+
+    return render_template(
+        'all_students.html',
+        students=students,
+        contests=contests,
+        search_query=search_query,
+        contest_filter=contest_filter,
+        place_filter=place_filter,
+        title='Все участники'
+    )
+
+
+@app.route('/student_contests/<int:student_id>')
+@login_required
+def student_contests(student_id):
+    db_sess = db_session.create_session()
+
+    # Получаем информацию о студенте
+    student = db_sess.query(Students).filter(Students.id == student_id).first()
+    if not student:
+        abort(404)
+
+    # Получаем все конкурсы, в которых участвовал студент
+    contests = db_sess.query(News).join(Students, News.id == Students.contest_id) \
+        .filter(Students.name == student.name).all()
+
+    return render_template(
+        'student_contests.html',
+        student=student,
+        contests=contests,
+        title=f'Конкурсы участника {student.name}'
+    )
+
+
 @app.route('/c')
 def c():
     db_sess = db_session.create_session()
     contest_id = request.args.get('contest_id', type=int)
 
     if contest_id:
-        # Получаем только участников данного конкурса
         students = db_sess.query(Students).filter(Students.contest_id == contest_id).all()
-        # Получаем информацию о конкурсе
         contest = db_sess.query(News).filter(News.id == contest_id).first()
         contest_name = contest.name if contest else "Неизвестный конкурс"
     else:
