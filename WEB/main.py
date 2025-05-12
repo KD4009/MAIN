@@ -521,14 +521,11 @@ def edit_home(id):
 @app.route("/ava", methods=['GET', 'POST'])
 def her():
     if request.method == 'POST':
-        # Получаем имя файла
         f = request.files['file']
 
-        # Проверяем, был ли выбран файл
         if f.filename == '':
             return render_template('her.html', message='нет файла')
 
-        # Создаем уникальное имя файла
         new_file = f'{current_user.id}.png'
         f = request.files['file']
 
