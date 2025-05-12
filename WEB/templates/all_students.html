@@ -8,15 +8,13 @@
 <div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
         <h1 align="center">{{ title }}</h1>
 
-    <!-- Форма фильтрации и поиска -->
         <div class="filter-container" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
             <form method="get" class="row g-5">
-            <!-- Поиск по имени -->
+
                 <div class="col-md-7">
                     <input type="text" name="search" class="form-control" placeholder="Поиск по имени" value="{{ search_query }}">
                 </div>
 
-            <!-- Фильтр по конкурсу -->
                 <div class="col-md-5">
                     <select name="contest" class="form-select">
                         <option value="">Все конкурсы</option>
@@ -28,12 +26,10 @@
                     </select>
                 </div>
 
-            <!-- Фильтр по месту -->
                 <div class="col-md-5">
                     <input type="text" name="place" class="form-control" placeholder="Фильтр по месту" value="{{ place_filter }}">
                 </div>
 
-            <!-- Кнопки -->
                 <div class="col-md-4">
                     <button type="submit" class="btn btn-primary w-100">Применить</button>
                 </div>
@@ -72,8 +68,8 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" align="center">Нет участников</td>-->
-            </tr>-->
+                <td colspan="4" align="center">Нет участников</td>
+            </tr>
             {% endfor %}
         </tbody>
 </table>

@@ -138,19 +138,16 @@ def export_news_to_excel():
 
 
 @app.route('/all_students')
-@login_required
+
 def all_students():
     db_sess = db_session.create_session()
 
-    # Получаем параметры фильтрации из запроса
     search_query = request.args.get('search', '').strip()
     contest_filter = request.args.get('contest', '').strip()
     place_filter = request.args.get('place', '').strip()
 
-    # Создаем базовый запрос
     query = db_sess.query(Students)
 
-    # Применяем фильтры
     if search_query:
         query = query.filter(Students.name.ilike(f'%{search_query}%'))
     if contest_filter:
@@ -160,7 +157,6 @@ def all_students():
 
     students = query.all()
 
-    # Получаем список всех конкурсов для фильтра
     contests = db_sess.query(News).all()
 
     return render_template(
@@ -179,12 +175,10 @@ def all_students():
 def student_contests(student_id):
     db_sess = db_session.create_session()
 
-    # Получаем информацию о студенте
     student = db_sess.query(Students).filter(Students.id == student_id).first()
     if not student:
         abort(404)
 
-    # Получаем все конкурсы, в которых участвовал студент
     contests = db_sess.query(News).join(Students, News.id == Students.contest_id) \
         .filter(Students.name == student.name).all()
 
@@ -370,7 +364,7 @@ def news_edit(id):
     form = EditNewsForm()
     if request.method == "GET":
         new_check = db_sess.query(News).filter(News.id == id).filter(News.author == current_user.id).first()
-        if current_user.email == 'regeneration76@yandex.ru' or current_user.email == 'valerylarionov06@gmail.com':
+        if current_user.email == 'kvondeniz@yandex.ru':
             new_check = db_sess.query(News).filter(News.id == id).first()
 
         if new_check:
@@ -809,8 +803,6 @@ def home(id):
 def logout():
     logout_user()
     return redirect("/")
-
-
 
 
 @app.route('/help')
