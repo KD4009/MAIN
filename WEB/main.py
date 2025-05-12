@@ -101,25 +101,25 @@ def export_news_to_excel():
         abort(403)
 
     db_sess = db_session.create_session()
-    news = db_sess.query(News).all()
+    # Получаем всех участников и связанные с ними конкурсы
+    students = db_sess.query(Students).all()
 
     data = []
-    for new in news:
-        author = db_sess.query(User).filter(User.id == new.author).first()
-        author_name = f"{author.name} {author.surname}" if author else "Неизвестный автор"
-
-        data.append({
-            'Название': new.name,
-            'Организатор': new.organizer,
-            'Уровень': new.level,
-            'Номинация': new.text,
-            'Формат': new.format,
-            'Ссылка на итоги конкурса': new.url,
-            'Место проведения': new.place,
-            'Дата проведения': new.date.strftime('%d.%m.%Y') if new.date else '',
-
-
-        })
+    for student in students:
+        contest = db_sess.query(News).filter(News.id == student.contest_id).first()
+        if contest:
+            data.append({
+                'Имя участника': student.name,
+                'Название конкурса': contest.name,
+                'Место ученика': student.place,
+                'Дата проведения конкурса': contest.date.strftime('%d.%m.%Y') if contest.date else '',
+                'Организатор': contest.organizer,
+                'Уровень конкурса': contest.level,
+                'Формат': contest.format,
+                'Номинация': contest.text,
+                'Место проведения конкурса': contest.place,
+                'Ссылка на итоги конкурса': contest.url
+            })
 
     df = pd.DataFrame(data)
 
